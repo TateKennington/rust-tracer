@@ -10,16 +10,16 @@ pub struct Vector3 {
 }
 
 impl Vector3 {
-    fn dot(vec: &Vector3, other: &Vector3) -> f64 {
+    pub fn dot(vec: &Vector3, other: &Vector3) -> f64 {
         vec.x * other.x + vec.y * other.y + vec.z * other.z
     }
 
-    fn reflect(&self, other: &Vector3) -> Vector3 {
+    pub fn reflect(&self, other: &Vector3) -> Vector3 {
         let proj = Vector3::dot(self, other);
         self - 2.0 * proj * other
     }
 
-    fn len_sq(&self) -> f64 {
+    pub fn len_sq(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
@@ -43,7 +43,7 @@ impl Vector3 {
         (1.0 - t) * vec + t * other
     }
 
-    fn near_zero(vec: Vector3) -> bool {
+    pub fn near_zero(vec: &Vector3) -> bool {
         vec.x.abs() < e && vec.y.abs() < e && vec.z.abs() < e
     }
 
@@ -56,13 +56,19 @@ impl Vector3 {
         }
     }
 
-    fn random_vec_sphere() -> Vector3 {
+    pub fn random_vec_sphere() -> Vector3 {
         loop {
             let vec = Vector3::random_vec(-1.0, 1.0);
             if vec.len() <= 1.0 {
                 return vec.unit();
             }
         }
+    }
+
+    pub fn sqrt(&mut self) {
+        self.x = self.x.sqrt();
+        self.y = self.y.sqrt();
+        self.z = self.z.sqrt();
     }
 }
 
@@ -199,3 +205,5 @@ impl std::ops::DivAssign<f64> for Vector3 {
         self.z /= rhs;
     }
 }
+
+pub type Color = Vector3;
