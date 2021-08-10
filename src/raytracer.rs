@@ -3,8 +3,10 @@ use crate::geometry::ray::Ray;
 use crate::geometry::sphere::Sphere;
 use crate::geometry::vector3::{Color, Vector3};
 use crate::geometry::Geometry;
-use crate::material::{lambertian::Lambertian, metal::Metal, Material, MaterialKind};
-use crate::scene::Scene;
+use crate::material::{
+    dielectric::Dielectric, lambertian::Lambertian, metal::Metal, Material, MaterialKind,
+};
+use crate::scene::{camera::Camera, Scene};
 use rand::prelude::*;
 use std::io::{BufWriter, Write};
 
@@ -13,7 +15,7 @@ const image_width: f64 = 400.0;
 const image_height: f64 = image_width / aspect_ratio;
 const width: usize = image_width as usize;
 const height: usize = image_height as usize;
-const samples_per_pixel: usize = 1;
+const samples_per_pixel: usize = 100;
 const max_depth: usize = 50;
 
 const viewport_height: f64 = 2.0;
@@ -30,23 +32,7 @@ pub fn render() -> Vec<u8> {
         let mut png_writer = encoder.write_header().unwrap();
         let mut stream = png_writer.stream_writer();
 
-        let horizontal = &Vector3 {
-            x: viewport_width,
-            y: 0.0,
-            z: 0.0,
-        };
-
-        let vertical = &Vector3 {
-            x: 0.0,
-            y: -viewport_height,
-            z: 0.0,
-        };
-
-        let viewport_origin = Vector3 {
-            x: -viewport_width / 2.0,
-            y: viewport_height / 2.0,
-            z: -focal_length,
-        };
+        let camera = Camera::new(viewport_width, viewport_height, focal_length);
 
         let material_ground = Lambertian {
             albedo: Vector3 {
@@ -57,24 +43,20 @@ pub fn render() -> Vec<u8> {
         };
         let material_center = Lambertian {
             albedo: Vector3 {
-                x: 0.7,
-                y: 0.3,
-                z: 0.3,
+                x: 0.1,
+                y: 0.2,
+                z: 0.5,
             },
         };
-        let material_left = Metal {
-            albedo: Vector3 {
-                x: 0.8,
-                y: 0.8,
-                z: 0.8,
-            },
-        };
+        let material_left = Dielectric { ir: 1.5 };
+        let material_left_inner = Dielectric { ir: 1.5 };
         let material_right = Metal {
             albedo: Vector3 {
                 x: 0.8,
                 y: 0.6,
                 z: 0.2,
             },
+            fuzz: 0.0,
         };
 
         let mut scene = Scene { objects: vec![] };
@@ -109,7 +91,18 @@ pub fn render() -> Vec<u8> {
                 },
                 radius: 0.5,
             }),
-            MaterialKind::Metal(material_left),
+            MaterialKind::Dielectric(material_left),
+        );
+        scene.add(
+            Geometry::Sphere(Sphere {
+                origin: Vector3 {
+                    x: -1.0,
+                    y: 0.0,
+                    z: -1.0,
+                },
+                radius: -0.4,
+            }),
+            MaterialKind::Dielectric(material_left_inner),
         );
         scene.add(
             Geometry::Sphere(Sphere {
@@ -135,19 +128,7 @@ pub fn render() -> Vec<u8> {
                 for _ in 0..samples_per_pixel {
                     let u = (rng.gen::<f64>() + x as f64) / width as f64;
                     let v = (rng.gen::<f64>() + y as f64) / height as f64;
-                    let direction = u * horizontal + v * vertical + viewport_origin;
-                    pixel += ray_color(
-                        Ray {
-                            origin: Vector3 {
-                                x: 0.0,
-                                y: 0.0,
-                                z: 0.0,
-                            },
-                            direction,
-                        },
-                        &scene,
-                        0,
-                    )
+                    pixel += ray_color(camera.get_ray(u, v), &scene, 0)
                 }
                 pixel /= samples_per_pixel as f64;
                 pixel.sqrt();
@@ -182,7 +163,7 @@ fn ray_color(r: Ray, scene: &Scene, depth: usize) -> Color {
             }
         }
         return Color {
-            x: 1.0,
+            x: 0.0,
             y: 0.0,
             z: 0.0,
         };

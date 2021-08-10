@@ -1,9 +1,8 @@
 import * as wasm from "rust-tracer";
 
-const canvas = document.createElement('canvas');
+const canvas = document.querySelector('canvas');
 canvas.width = 400
 canvas.height = 225
-document.body.append(canvas);
 const ctx = canvas.getContext('2d');
 ctx.globalCompositeOperation = 'lighten';
 const images = [];

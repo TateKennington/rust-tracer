@@ -1,3 +1,5 @@
+pub mod camera;
+
 use crate::geometry::hittable::{HitResult, Hittable};
 use crate::geometry::ray::Ray;
 use crate::geometry::Geometry;

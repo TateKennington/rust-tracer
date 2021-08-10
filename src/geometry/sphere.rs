@@ -28,7 +28,7 @@ impl Hittable for Sphere {
         }
 
         let point = ray.at(root);
-        let mut normal = (&point - &self.origin).unit();
+        let mut normal = (&point - &self.origin) * (1.0 / self.radius);
         let front_face = Vector3::dot(&ray.direction, &normal) <= 0.0;
 
         if !front_face {

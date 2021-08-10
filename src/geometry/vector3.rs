@@ -35,6 +35,13 @@ impl Vector3 {
         }
     }
 
+    pub fn refract(uv: &Vector3, n: &Vector3, ir: f64) -> Vector3 {
+        let cos_theta = Vector3::dot(&(-1.0 * uv), n).min(1.0);
+        let perp = (uv + cos_theta * n) * ir;
+        let parallel = n * -(1.0 - perp.len_sq()).sqrt();
+        perp + parallel
+    }
+
     pub fn unit(&self) -> Vector3 {
         self / self.len()
     }
