@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use std::ops;
 
 const e: f64 = 1e-8;
 
@@ -10,6 +11,10 @@ pub struct Vector3 {
 }
 
 impl Vector3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Vector3 {
+        Vector3 { x, y, z }
+    }
+
     pub fn dot(vec: &Vector3, other: &Vector3) -> f64 {
         vec.x * other.x + vec.y * other.y + vec.z * other.z
     }
@@ -27,7 +32,7 @@ impl Vector3 {
         self.len_sq().sqrt()
     }
 
-    fn cross(&self, other: &Vector3) -> Vector3 {
+    pub fn cross(&self, other: &Vector3) -> Vector3 {
         Vector3 {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
@@ -36,9 +41,9 @@ impl Vector3 {
     }
 
     pub fn refract(uv: &Vector3, n: &Vector3, ir: f64) -> Vector3 {
-        let cos_theta = Vector3::dot(&(-1.0 * uv), n).min(1.0);
+        let cos_theta = Vector3::dot(&-uv, n).min(1.0);
         let perp = (uv + cos_theta * n) * ir;
-        let parallel = n * -(1.0 - perp.len_sq()).sqrt();
+        let parallel = -n * (1.0 - perp.len_sq()).sqrt();
         perp + parallel
     }
 
@@ -60,6 +65,20 @@ impl Vector3 {
             x: min + rng.gen::<f64>() * (max - min),
             y: min + rng.gen::<f64>() * (max - min),
             z: min + rng.gen::<f64>() * (max - min),
+        }
+    }
+
+    pub fn random_vec_disk() -> Vector3 {
+        let mut rng = rand::thread_rng();
+        loop {
+            let vec = Vector3 {
+                x: -1.0 + rng.gen::<f64>(),
+                y: -1.0 + rng.gen::<f64>(),
+                z: 0.0,
+            };
+            if vec.len() <= 1.0 {
+                return vec;
+            }
         }
     }
 
@@ -85,132 +104,46 @@ impl std::fmt::Display for Vector3 {
     }
 }
 
-impl std::ops::Add for Vector3 {
-    type Output = Vector3;
+impl_op_ex!(+ |a: &Vector3, b: &Vector3| -> Vector3{
+    Vector3::new(a.x + b.x, a.y + b.y, a.z+b.z)
+});
 
-    fn add(self, rhs: Vector3) -> Vector3 {
-        Vector3 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
-    }
-}
+impl_op_ex!(-|a: &Vector3, b: &Vector3| -> Vector3 {
+    Vector3::new(a.x - b.x, a.y - b.y, a.z - b.z)
+});
 
-impl std::ops::Add<Vector3> for &Vector3 {
-    type Output = Vector3;
+impl_op_ex!(+= |a: &mut Vector3, b: &Vector3|{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+});
 
-    fn add(self, rhs: Vector3) -> Vector3 {
-        Vector3 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
-    }
-}
+impl_op_ex!(-= |a: &mut Vector3, b: &Vector3|{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+});
 
-impl std::ops::Sub for &Vector3 {
-    type Output = Vector3;
+impl_op!(*= |a: &mut Vector3, b: f64|{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+});
 
-    fn sub(self, rhs: &Vector3) -> Vector3 {
-        Vector3 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
-    }
-}
+impl_op!(/= |a: &mut Vector3, b: f64|{
+    a.x /= b;
+    a.y /= b;
+    a.z /= b;
+});
 
-impl std::ops::Sub<Vector3> for &Vector3 {
-    type Output = Vector3;
+impl_op_ex!(-|a: &Vector3| -> Vector3 { Vector3::new(-a.x, -a.y, -a.z) });
 
-    fn sub(self, rhs: Vector3) -> Vector3 {
-        Vector3 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
-    }
-}
+impl_op_ex_commutative!(*|a: &Vector3, b: f64| -> Vector3 {
+    Vector3::new(a.x * b, a.y * b, a.z * b)
+});
 
-impl std::ops::AddAssign for Vector3 {
-    fn add_assign(&mut self, rhs: Vector3) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
-}
-
-impl std::ops::SubAssign for Vector3 {
-    fn sub_assign(&mut self, rhs: Vector3) {
-        self.x -= rhs.x;
-        self.y -= rhs.y;
-        self.z -= rhs.z;
-    }
-}
-
-impl std::ops::Mul<f64> for Vector3 {
-    type Output = Self;
-
-    fn mul(self, rhs: f64) -> Vector3 {
-        Self {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
-    }
-}
-
-impl std::ops::Mul<f64> for &Vector3 {
-    type Output = Vector3;
-
-    fn mul(self, rhs: f64) -> Vector3 {
-        Vector3 {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
-    }
-}
-
-impl std::ops::Mul<&Vector3> for f64 {
-    type Output = Vector3;
-
-    fn mul(self, rhs: &Vector3) -> Vector3 {
-        Vector3 {
-            x: rhs.x * self,
-            y: rhs.y * self,
-            z: rhs.z * self,
-        }
-    }
-}
-
-impl std::ops::MulAssign<f64> for Vector3 {
-    fn mul_assign(&mut self, rhs: f64) {
-        self.x *= rhs;
-        self.y *= rhs;
-        self.z *= rhs;
-    }
-}
-
-impl std::ops::Div<f64> for &Vector3 {
-    type Output = Vector3;
-
-    fn div(self, rhs: f64) -> Vector3 {
-        Vector3 {
-            x: self.x / rhs,
-            y: self.y / rhs,
-            z: self.z / rhs,
-        }
-    }
-}
-
-impl std::ops::DivAssign<f64> for Vector3 {
-    fn div_assign(&mut self, rhs: f64) {
-        self.x /= rhs;
-        self.y /= rhs;
-        self.z /= rhs;
-    }
-}
+impl_op_ex_commutative!(/|a: &Vector3, b: f64| -> Vector3 {
+    Vector3::new(a.x / b, a.y / b, a.z / b)
+});
 
 pub type Color = Vector3;

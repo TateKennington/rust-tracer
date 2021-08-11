@@ -12,8 +12,8 @@ pub struct Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit: &HitResult) -> Option<(Color, Ray)> {
-        let mut scatter_direction =
-            ray.direction.reflect(&hit.normal) + self.fuzz * &Vector3::random_vec_sphere();
+        let scatter_direction =
+            ray.direction.reflect(&hit.normal) + self.fuzz * Vector3::random_vec_sphere();
 
         let scatter_ray = Ray {
             origin: hit.point,

@@ -12,11 +12,7 @@ pub struct Dielectric {
 
 impl Material for Dielectric {
     fn scatter(&self, ray: &Ray, hit: &HitResult) -> Option<(Color, Ray)> {
-        let attentuation = Color {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        };
+        let attentuation = Vector3::new(1.0, 1.0, 1.0);
         let ir = if hit.front_face {
             1.0 / self.ir
         } else {
@@ -24,7 +20,7 @@ impl Material for Dielectric {
         };
 
         let direction = ray.direction.unit();
-        let cos_theta = Vector3::dot(&(-1.0f64 * &direction), &hit.normal).min(1.0);
+        let cos_theta = Vector3::dot(&-direction, &hit.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let mut rng = thread_rng();
 

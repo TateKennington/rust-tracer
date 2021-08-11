@@ -1,6 +1,6 @@
 use super::ray::Ray;
 use super::vector3::Vector3;
-use crate::material::{Material, MaterialKind};
+use crate::material::MaterialKind;
 
 pub struct HitResult<'a> {
     pub point: Vector3,

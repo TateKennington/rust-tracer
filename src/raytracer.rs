@@ -15,14 +15,9 @@ const image_width: f64 = 400.0;
 const image_height: f64 = image_width / aspect_ratio;
 const width: usize = image_width as usize;
 const height: usize = image_height as usize;
-const samples_per_pixel: usize = 100;
-const max_depth: usize = 50;
-
-const viewport_height: f64 = 2.0;
-const viewport_width: f64 = aspect_ratio * viewport_height;
 const focal_length: f64 = 1.0;
 
-pub fn render() -> Vec<u8> {
+pub fn render(samples_per_pixel: usize, max_depth: usize) -> Vec<u8> {
     let mut buffer = Vec::with_capacity(width * height);
     {
         let writer: BufWriter<&mut Vec<_>> = BufWriter::new(buffer.as_mut());
@@ -32,87 +27,48 @@ pub fn render() -> Vec<u8> {
         let mut png_writer = encoder.write_header().unwrap();
         let mut stream = png_writer.stream_writer();
 
-        let camera = Camera::new(viewport_width, viewport_height, focal_length);
+        let camera = Camera::new(
+            Vector3::new(3.0, 3.0, 2.0),
+            Vector3::new(0.0, 0.0, -1.0),
+            Vector3::new(0.0, 1.0, 0.0),
+            aspect_ratio,
+            20.0,
+            0.1,
+            27.0f64.sqrt(),
+        );
 
         let material_ground = Lambertian {
-            albedo: Vector3 {
-                x: 0.8,
-                y: 0.8,
-                z: 0.0,
-            },
+            albedo: Vector3::new(0.8, 0.8, 0.0),
         };
         let material_center = Lambertian {
-            albedo: Vector3 {
-                x: 0.1,
-                y: 0.2,
-                z: 0.5,
-            },
+            albedo: Vector3::new(0.1, 0.2, 0.5),
         };
         let material_left = Dielectric { ir: 1.5 };
         let material_left_inner = Dielectric { ir: 1.5 };
         let material_right = Metal {
-            albedo: Vector3 {
-                x: 0.8,
-                y: 0.6,
-                z: 0.2,
-            },
+            albedo: Vector3::new(0.8, 0.6, 0.2),
             fuzz: 0.0,
         };
 
         let mut scene = Scene { objects: vec![] };
         scene.add(
-            Geometry::Sphere(Sphere {
-                origin: Vector3 {
-                    x: 0.0,
-                    y: -100.5,
-                    z: -1.0,
-                },
-                radius: 100.0,
-            }),
+            Geometry::Sphere(Sphere::new(Vector3::new(0.0, -100.5, -1.0), 100.0)),
             MaterialKind::Lambertian(material_ground),
         );
         scene.add(
-            Geometry::Sphere(Sphere {
-                origin: Vector3 {
-                    x: 0.0,
-                    y: 0.0,
-                    z: -1.0,
-                },
-                radius: 0.5,
-            }),
+            Geometry::Sphere(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5)),
             MaterialKind::Lambertian(material_center),
         );
         scene.add(
-            Geometry::Sphere(Sphere {
-                origin: Vector3 {
-                    x: -1.0,
-                    y: 0.0,
-                    z: -1.0,
-                },
-                radius: 0.5,
-            }),
+            Geometry::Sphere(Sphere::new(Vector3::new(-1.0, 0.0, -1.0), 0.5)),
             MaterialKind::Dielectric(material_left),
         );
         scene.add(
-            Geometry::Sphere(Sphere {
-                origin: Vector3 {
-                    x: -1.0,
-                    y: 0.0,
-                    z: -1.0,
-                },
-                radius: -0.4,
-            }),
+            Geometry::Sphere(Sphere::new(Vector3::new(-1.0, 0.0, -1.0), -0.4)),
             MaterialKind::Dielectric(material_left_inner),
         );
         scene.add(
-            Geometry::Sphere(Sphere {
-                origin: Vector3 {
-                    x: 1.0,
-                    y: 0.0,
-                    z: -1.0,
-                },
-                radius: 0.5,
-            }),
+            Geometry::Sphere(Sphere::new(Vector3::new(1.0, 0.0, -1.0), 0.5)),
             MaterialKind::Metal(material_right),
         );
 
@@ -120,15 +76,11 @@ pub fn render() -> Vec<u8> {
         for y in 0..height {
             println!("\rProgress {}/{}", y + 1, height);
             for x in 0..width {
-                let mut pixel = Color {
-                    x: 0.0,
-                    y: 0.0,
-                    z: 0.0,
-                };
+                let mut pixel = Vector3::new(0.0, 0.0, 0.0);
                 for _ in 0..samples_per_pixel {
                     let u = (rng.gen::<f64>() + x as f64) / width as f64;
                     let v = (rng.gen::<f64>() + y as f64) / height as f64;
-                    pixel += ray_color(camera.get_ray(u, v), &scene, 0)
+                    pixel += ray_color(camera.get_ray(u, v), &scene, max_depth)
                 }
                 pixel /= samples_per_pixel as f64;
                 pixel.sqrt();
@@ -145,42 +97,26 @@ pub fn render() -> Vec<u8> {
 }
 
 fn ray_color(r: Ray, scene: &Scene, depth: usize) -> Color {
-    if depth >= max_depth {
-        return Color {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
+    if depth == 0 {
+        return Vector3::new(0.0, 0.0, 0.0);
     }
     if let Some(hit) = scene.hit(&r, 0.0001, f64::MAX) {
         if let Some(material) = &hit.material {
             if let Some((attentuation, scatter_ray)) = material.scatter(&r, &hit) {
-                let mut color = ray_color(scatter_ray, scene, depth + 1);
+                let mut color = ray_color(scatter_ray, scene, depth - 1);
                 color.x *= attentuation.x;
                 color.y *= attentuation.y;
                 color.z *= attentuation.z;
                 return color;
             }
         }
-        return Color {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
+        return Vector3::new(0.0, 0.0, 0.0);
     }
     let unit_direction = r.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.0);
     return Vector3::lerp(
-        &Color {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        },
-        &Color {
-            x: 0.5,
-            y: 0.7,
-            z: 1.0,
-        },
+        &Vector3::new(1.0, 1.0, 1.0),
+        &Vector3::new(0.5, 0.7, 1.0),
         t,
     );
 }

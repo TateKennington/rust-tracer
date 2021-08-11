@@ -7,9 +7,15 @@ pub struct Sphere {
     pub radius: f64,
 }
 
+impl Sphere {
+    pub fn new(origin: Vector3, radius: f64) -> Sphere {
+        Sphere { origin, radius }
+    }
+}
+
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, min_t: f64, max_t: f64) -> Option<HitResult> {
-        let sphere_to_ray = &ray.origin - &self.origin;
+        let sphere_to_ray = ray.origin - self.origin;
         let half_b = Vector3::dot(&ray.direction, &sphere_to_ray);
         let direction_sq = ray.direction.len_sq();
         let determinant =
@@ -28,7 +34,7 @@ impl Hittable for Sphere {
         }
 
         let point = ray.at(root);
-        let mut normal = (&point - &self.origin) * (1.0 / self.radius);
+        let mut normal = (point - self.origin) / self.radius;
         let front_face = Vector3::dot(&ray.direction, &normal) <= 0.0;
 
         if !front_face {

@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+impl_ops = "0.1.1"
 js-sys = "0.3.52"
 png = "0.16.8"
 rand = {version = "0.6.5", features = ["wasm-bindgen"]}
