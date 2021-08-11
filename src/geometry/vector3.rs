@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use std::ops;
 
-const e: f64 = 1e-8;
+const E: f64 = 1e-8;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector3 {
@@ -56,7 +56,7 @@ impl Vector3 {
     }
 
     pub fn near_zero(vec: &Vector3) -> bool {
-        vec.x.abs() < e && vec.y.abs() < e && vec.z.abs() < e
+        vec.x.abs() < E && vec.y.abs() < E && vec.z.abs() < E
     }
 
     fn random_vec(min: f64, max: f64) -> Vector3 {

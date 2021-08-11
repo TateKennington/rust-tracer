@@ -10,18 +10,17 @@ use crate::scene::{camera::Camera, Scene};
 use rand::prelude::*;
 use std::io::{BufWriter, Write};
 
-const aspect_ratio: f64 = 16.0 / 9.0;
-const image_width: f64 = 400.0;
-const image_height: f64 = image_width / aspect_ratio;
-const width: usize = image_width as usize;
-const height: usize = image_height as usize;
-const focal_length: f64 = 1.0;
+const ASPECT_RATIO: f64 = 16.0 / 9.0;
+const IMAGE_WIDTH: f64 = 400.0;
+const IMAGE_HEIGHT: f64 = IMAGE_WIDTH / ASPECT_RATIO;
+const WIDTH: usize = IMAGE_WIDTH as usize;
+const HEIGHT: usize = IMAGE_HEIGHT as usize;
 
 pub fn render(samples_per_pixel: usize, max_depth: usize) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(width * height);
+    let mut buffer = Vec::with_capacity(WIDTH * HEIGHT);
     {
         let writer: BufWriter<&mut Vec<_>> = BufWriter::new(buffer.as_mut());
-        let mut encoder = png::Encoder::new(writer, width as u32, height as u32);
+        let mut encoder = png::Encoder::new(writer, WIDTH as u32, HEIGHT as u32);
         encoder.set_color(png::ColorType::RGBA);
         encoder.set_depth(png::BitDepth::Eight);
         let mut png_writer = encoder.write_header().unwrap();
@@ -31,7 +30,7 @@ pub fn render(samples_per_pixel: usize, max_depth: usize) -> Vec<u8> {
             Vector3::new(3.0, 3.0, 2.0),
             Vector3::new(0.0, 0.0, -1.0),
             Vector3::new(0.0, 1.0, 0.0),
-            aspect_ratio,
+            ASPECT_RATIO,
             20.0,
             0.1,
             27.0f64.sqrt(),
@@ -73,13 +72,13 @@ pub fn render(samples_per_pixel: usize, max_depth: usize) -> Vec<u8> {
         );
 
         let mut rng = thread_rng();
-        for y in 0..height {
-            println!("\rProgress {}/{}", y + 1, height);
-            for x in 0..width {
+        for y in 0..HEIGHT {
+            println!("\rProgress {}/{}", y + 1, HEIGHT);
+            for x in 0..WIDTH {
                 let mut pixel = Vector3::new(0.0, 0.0, 0.0);
                 for _ in 0..samples_per_pixel {
-                    let u = (rng.gen::<f64>() + x as f64) / width as f64;
-                    let v = (rng.gen::<f64>() + y as f64) / height as f64;
+                    let u = (rng.gen::<f64>() + x as f64) / WIDTH as f64;
+                    let v = (rng.gen::<f64>() + y as f64) / HEIGHT as f64;
                     pixel += ray_color(camera.get_ray(u, v), &scene, max_depth)
                 }
                 pixel /= samples_per_pixel as f64;
